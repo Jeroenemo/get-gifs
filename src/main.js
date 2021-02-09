@@ -2,41 +2,40 @@ import $ from 'jquery';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './css/styles.css';
+import GifGet from './gif-get.js';
 
 $(document).ready(function(){
   $("#search-btn").click(function(){
-    const searchWord = $("#keyword").val();
+    const keyword = $("#keyword").val();
     $("#display-random-gif").empty();
     $("#display-search-gif").empty();
     $(".footer").show();
-  
-    function getElements(response) {
-      let embedLinks = response.data.map(function(elem) {
-        return elem.embed_url;
-
-      });
-      for (let i=0; i <= 9; i ++){
-        $("div#display-search-gif").append(`<iframe src="${embedLinks[i]}" width="480" height="303" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>`);
-      }
-    }
-
-    if (searchWord === "") {
-      $("#display-search-gif").append('<p>Please enter a keyword</p>');
+    if (keyword === "") {
+      $("display-search-gif").append('<p>Please enter a keyword</p>');
       return undefined;
-    }
-    else {
-      let request = new XMLHttpRequest();
-      const urlSearch = `https://api.giphy.com/v1/gifs/search?api_key=${process.env.API_KEY}&q=${searchWord}&limit=25&offset=0&rating=g&lang=en`;
-  
-      request.onreadystatechange = function() {
-        if (this.readyState === 4 && this.status === 200) {
-          const response = JSON.parse(this.responseText);
-          getElements(response);
+    } else {
+      let promise = GifGet.getGif(keyword);
+      promise.then(function(response) {
+        const responseBody = JSON.parse(response);
+        const embedLinksArr = getElements(responseBody);
+        for (let i=0; i <= 9; i ++) {
+          $("div#display-search-gif").append(`<iframe src="${embedLinksArr[i]}" width="480" height="303" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>`);
         }
-      };
-      request.open("GET", urlSearch, true);
-      request.send();
-    }
+      }, function(error) {
+
+      })
+      
+      
+    
+      function getElements(response) {
+        let embedLinksArr = response.data.map(function(elem) {
+        return elem.embed_url;
+        });
+        return embedLinksArr;
+      }
+  }
+     }
+ 
   });
 
 
@@ -63,5 +62,20 @@ $(document).ready(function(){
       let link = response.data.embed_url;
       $("#display-random-gif").append(`<iframe src="${link}" width="480" height="303" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>`);
     }
+  });
+});
+
+$(document).ready(function() {
+  $('#weatherLocation').click(function() {
+    let city = $('#location').val();
+    clearFields();
+    let promise = WeatherService.getWeather(city);
+    promise.then(function(response) {
+      const body = JSON.parse(response);
+      $('.showHumidity').text(`The humidity in ${city} is ${body.main.humidity}%`);
+      $('.showTemp').text(`The temperature in Kelvins is ${body.main.temp} degrees.`);
+    }, function(error) {
+      $('.showErrors').text(`There was an error processing your request: ${error}`);
+    });
   });
 });
